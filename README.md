@@ -7,8 +7,8 @@ Apri `index.html` in un browser (nessuna installazione, funziona anche offline) 
 
 ## Regole di calcolo
 - Per ogni volo si legge la colonna **TOTALE**; se è vuota (PDF più vecchi) si usa il tempo singolo.
-- **Data abilitazione** = ultimo giorno di scuola (ultimo volo SCU prima del primo volo non-SCU dopo il quale non compare SCU nei 5 voli successivi). Quel giorno resta scuola e vale solo come data. La data è modificabile nell'interfaccia.
-- Ore dopo l'abilitazione = voli con data successiva alla data di abilitazione. La scuola successiva (SCU) resta conteggiata.
+- **Data di abilitazione**: si inserisce a mano dopo aver caricato il PDF; finché non c'è, non viene mostrato nessun numero. Il conteggio parte dal giorno successivo: i voli fino a quella data compresa sono scuola iniziale e non vengono sommati.
+- Ore dopo l'abilitazione = voli con data successiva alla data indicata. La scuola successiva (SCU) resta conteggiata.
 - Controllo automatico: ore dopo abilitazione + scuola iniziale = "Total next Month" dell'ultima pagina del PDF.
 
 ## Sviluppo

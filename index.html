@@ -60,6 +60,11 @@
     <div id="status" class="hint hide"></div>
   </div>
 
+  <div class="card hide" id="dateCard">
+    <div class="datebox" style="border-top:0;padding-top:0"><label for="start" class="code">Data di abilitazione</label><input type="date" id="start"></div>
+    <div class="hint" id="dateHint">Inserisci la data di abilitazione per vedere il conteggio. Si contano i voli dal giorno successivo; il giorno indicato resta escluso.</div>
+  </div>
+
   <div id="result" class="hide">
   <div class="grid">
     <div class="card">
@@ -79,8 +84,7 @@
     <div class="card" style="background:#f9fafb">
       <div class="lbl" style="margin-bottom:6px">Scuola iniziale · non conteggiata</div>
       <div class="row"><span class="code">Scuola iniziale</span><span class="num" id="pre">–</span></div>
-      <div class="datebox"><label for="start" class="code">Data abilitazione</label><input type="date" id="start"></div>
-      <div class="hint" id="preSub"></div><div class="hint">Ultimo giorno di scuola: conta come scuola, vale solo come data. Rilevata in automatico, modificabile.</div>
+      <div class="hint" id="preSub"></div>
     </div>
   </div>
     <div id="warn" class="warn hide"></div>
@@ -193,34 +197,19 @@ async function readPdf(file){
     if (!data.flights.length) throw new Error('Nessuna riga di volo riconosciuta: è il file giusto?');
     $('status').textContent = `${file.name} · ${pdf.numPages} pagine · ${data.flights.length} voli`;
     $('dropTitle').textContent = 'Carica un altro PDF';
-    render();
+    $('start').value = ''; data.start = null;
+    $('dateCard').classList.remove('hide'); $('result').classList.add('hide');
   }catch(e){
     $('status').textContent = 'Errore: ' + e.message;
-    $('result').classList.add('hide');
+    $('result').classList.add('hide'); $('dateCard').classList.add('hide');
   }
 }
 
 const iso = d => d.split('/').reverse().join('-');
 const ita = s => s.split('-').reverse().join('/');
 
-// Data abilitazione = ultimo giorno di scuola (ultimo volo SCU prima del primo volo non-SCU
-// dopo il quale non si rivede SCU nei 5 voli successivi)
-function detectStart(fl){
-  let i = 0;
-  for (; i<fl.length; i++){
-    if (fl[i].code==='SCU') continue;
-    if (!fl.slice(i+1,i+6).some(f=>f.code==='SCU')) break;
-  }
-  if (i >= fl.length) i = 0;
-  for (let j=i-1; j>=0; j--) if (fl[j].code==='SCU') return iso(fl[j].date);
-  const d = new Date(iso(fl[0].date)+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()-1);
-  return d.toISOString().slice(0,10);
-}
-
 function render(){
   const fl = data.flights;
-  if (!data.start) data.start = detectStart(fl);
-  $('start').value = data.start;
   const pre = fl.filter(f => iso(f.date) <= data.start), post = fl.filter(f => iso(f.date) > data.start);
   const sum = a => a.reduce((s,f)=>s+f.min,0);
   const tot = {};
@@ -234,7 +223,7 @@ function render(){
   const net = sum(post), preM = sum(pre);
   $('net').textContent = fmt(net);
   $('all').textContent = fmt(net);
-  $('netSub').textContent = post.length ? `Abilitazione del ${ita(data.start)} · ${post.length} voli successivi` : 'Nessun volo dopo la scuola';
+  $('netSub').textContent = post.length ? `Dal giorno dopo l'abilitazione (${ita(data.start)}) · ${post.length} voli` : 'Nessun volo dopo la data indicata';
   $('pre').textContent = fmt(preM); $('pre2').textContent = fmt(preM);
   $('preSub').textContent = pre.length ? `${pre.length} voli dal ${pre[0].date} al ${pre[pre.length-1].date}` : 'Nessun volo di scuola iniziale';
 
@@ -250,7 +239,11 @@ function render(){
   $('result').classList.remove('hide');
 }
 
-$('start').onchange = e => { if (e.target.value){ data.start = e.target.value; render(); } };
+$('start').onchange = e => {
+  if (!data) return;
+  if (e.target.value){ data.start = e.target.value; render(); }
+  else { data.start = null; $('result').classList.add('hide'); }
+};
 $('file').onchange = e => e.target.files[0] && readPdf(e.target.files[0]);
 const d = $('drop');
 ['dragenter','dragover'].forEach(ev => d.addEventListener(ev, e => {e.preventDefault(); d.classList.add('over');}));
