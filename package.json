@@ -1,0 +1,8 @@
+{
+  "name": "somma-ore-volo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Somma delle ore di volo da Flight Pilot Log (PDF), al netto della scuola iniziale",
+  "author": "Matteo Messina",
+  "dependencies": { "pdfjs-dist": "3.11.174" }
+}

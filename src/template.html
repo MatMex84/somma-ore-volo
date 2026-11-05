@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!--
+  Somma ore di volo
+  Copyright (c) 2026 Matteo Messina. Tutti i diritti riservati.
+-->
+<html lang="it">
+<head>
+<meta name="author" content="Matteo Messina">
+<meta name="copyright" content="Copyright (c) 2026 Matteo Messina. Tutti i diritti riservati.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Somma ore di volo</title>
+<style>
+  :root{--bg:#f4f5f7;--card:#fff;--ink:#14181f;--mut:#667085;--line:#e3e6ec;--acc:#c8102e;--ok:#12805c;--ko:#b42318}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:max(16px,env(safe-area-inset-top)) 16px 32px}
+  main{max-width:1040px;margin:0 auto}
+  h1{font-size:22px;margin:8px 0 4px}
+  p.sub{margin:0 0 16px;color:var(--mut);font-size:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .drop{display:block;border:2px dashed #c3c9d4;border-radius:12px;padding:28px 12px;text-align:center;cursor:pointer;color:var(--mut)}
+  .drop.over{border-color:var(--acc);background:#fff5f6}
+  .drop b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+  input[type=file]{display:none}
+  .big{font-size:44px;font-weight:700;letter-spacing:-1px;margin:4px 0}
+  .lbl{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  .row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:10px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row label{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .row input{width:20px;height:20px;accent-color:var(--acc)}
+  .num{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  .code{font-weight:600}.desc{color:var(--mut);font-size:13px}
+  .chk{font-size:14px;margin-top:10px;padding:10px 12px;border-radius:10px}
+  .chk.ok{background:#e8f6f0;color:var(--ok)}.chk.ko{background:#fdecea;color:var(--ko)}
+  .warn{font-size:13px;color:var(--ko);margin-top:8px}
+  .hide{display:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px;align-items:stretch}
+  .grid .card{margin-bottom:0;min-width:0}
+  .big{overflow-wrap:anywhere}
+  .datebox{padding:12px 0 4px;border-top:1px solid var(--line)}
+  .datebox label{display:block;margin-bottom:8px}
+  #start{display:block;width:100%;max-width:100%;min-width:0;min-height:44px;height:44px;box-sizing:border-box;padding:8px 12px;font:inherit;color:var(--ink);background:#fff;border:1px solid #c3c9d4;border-radius:10px;text-align:left;-webkit-appearance:none;appearance:none}
+  #start::-webkit-date-and-time-value{text-align:left;min-height:1.4em}
+  .datebox + .hint{margin-top:12px}
+  #warn{margin-top:14px}
+  .hint{font-size:13px;color:var(--mut);margin:8px 0 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Somma ore di volo</h1>
+  <p class="sub">Carica il Flight Pilot Log (PDF). Il file resta sul tuo dispositivo.</p>
+
+  <div class="card">
+    <label class="drop" id="drop">
+      <b id="dropTitle">Scegli il PDF</b>
+      <span id="dropSub">oppure trascinalo qui</span>
+      <input type="file" id="file" accept="application/pdf,.pdf">
+    </label>
+    <div id="status" class="hint hide"></div>
+  </div>
+
+  <div id="result" class="hide">
+  <div class="grid">
+    <div class="card">
+      <div class="lbl">Ore dopo l'abilitazione</div>
+      <div class="big" id="net">–</div>
+      <div class="hint" id="netSub"></div>
+      <div id="check" class="chk hide"></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl" style="margin-bottom:6px">Ore per tipo di attività (dall'abilitazione)</div>
+      <div id="codes"></div>
+      <div class="row"><span class="code">Totale</span><span class="num" id="all">–</span></div>
+      <div class="row" style="color:var(--mut)"><span>Scuola iniziale <span class="desc">(non sommata)</span></span><span class="num" id="pre2">–</span></div>
+    </div>
+
+    <div class="card" style="background:#f9fafb">
+      <div class="lbl" style="margin-bottom:6px">Scuola iniziale · non conteggiata</div>
+      <div class="row"><span class="code">Scuola iniziale</span><span class="num" id="pre">–</span></div>
+      <div class="datebox"><label for="start" class="code">Data abilitazione</label><input type="date" id="start"></div>
+      <div class="hint" id="preSub"></div><div class="hint">Ultimo giorno di scuola: conta come scuola, vale solo come data. Rilevata in automatico, modificabile.</div>
+    </div>
+  </div>
+    <div id="warn" class="warn hide"></div>
+  </div>
+</main>
+
+<script>/*PDFJS*/</script>
+<script>/*WORKER*/</script>
+<script>
+/* Copyright (c) 2026 Matteo Messina. Tutti i diritti riservati. */
+/* ---------- logica ---------- */
+const DESC = {SCU:'Scuola successiva'};
+
+const toMin = s => { const [h,m] = s.split(':'); return (+h)*60 + (+m); };
+const fmt = m => Math.floor(m/60) + ':' + String(m%60).padStart(2,'0');
+
+// Ricostruisce le righe di testo di una pagina raggruppando per coordinata Y
+function pageLines(items){
+  const rows = [];
+  for (const it of items){
+    if (!it.str || !it.str.trim()) continue;
+    const y = it.transform[5], x = it.transform[4];
+    let r = rows.find(r => Math.abs(r.y - y) < 2.5);
+    if (!r){ r = {y, parts:[]}; rows.push(r); }
+    r.parts.push({x, s: it.str});
+  }
+  rows.sort((a,b) => b.y - a.y);
+  return rows.map(r => r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s).join(' ').replace(/\s+/g,' ').trim());
+}
+
+// Estrae le righe di volo e il totale riportato nel PDF
+function parseLines(allLines){
+  const flights = [], skipped = [];
+  let reported = null;
+  for (const l of allLines){
+    if (/^\d\d\/\d\d\/\d{4}/.test(l)){
+      // ... X <tempo singolo> [<tempo TOTALE>] ...  <codice>
+      // (nei PDF più vecchi la colonna TOTALE è vuota: vale il tempo singolo)
+      const m = l.match(/\sX\s+(\d+:\d\d(?::\d\d)?)(?:\s+(\d+:\d\d)\b)?/);
+      const code = (l.match(/\s([A-Z]{3})$/)||[])[1];
+      if (m && code) flights.push({code, min: toMin(m[2] || m[1]), date: l.slice(0,10)});
+      else skipped.push(l);
+    } else {
+      const t = l.match(/^Total next Month\s*:\s*\S+\s+(\d+:\d\d)\b/);
+      if (t) reported = toMin(t[1]);       // l'ultima occorrenza = ultima pagina
+    }
+  }
+  return {flights, skipped, reported};
+}
+
+/* ---------- interfaccia ---------- */
+const $ = id => document.getElementById(id);
+let data = null;
+
+async function readPdf(file){
+  $('status').classList.remove('hide'); $('status').textContent = 'Lettura in corso…';
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'about:blank';
+    const pdf = await pdfjsLib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+    const lines = [];
+    for (let p=1; p<=pdf.numPages; p++){
+      const tc = await (await pdf.getPage(p)).getTextContent();
+      lines.push(...pageLines(tc.items));
+    }
+    data = parseLines(lines);
+    data.pages = pdf.numPages; data.start = null;
+    data.name = file.name;
+    if (!data.flights.length) throw new Error('Nessuna riga di volo riconosciuta: è il file giusto?');
+    $('status').textContent = `${file.name} · ${pdf.numPages} pagine · ${data.flights.length} voli`;
+    $('dropTitle').textContent = 'Carica un altro PDF';
+    render();
+  }catch(e){
+    $('status').textContent = 'Errore: ' + e.message;
+    $('result').classList.add('hide');
+  }
+}
+
+const iso = d => d.split('/').reverse().join('-');
+const ita = s => s.split('-').reverse().join('/');
+
+// Data abilitazione = ultimo giorno di scuola (ultimo volo SCU prima del primo volo non-SCU
+// dopo il quale non si rivede SCU nei 5 voli successivi)
+function detectStart(fl){
+  let i = 0;
+  for (; i<fl.length; i++){
+    if (fl[i].code==='SCU') continue;
+    if (!fl.slice(i+1,i+6).some(f=>f.code==='SCU')) break;
+  }
+  if (i >= fl.length) i = 0;
+  for (let j=i-1; j>=0; j--) if (fl[j].code==='SCU') return iso(fl[j].date);
+  const d = new Date(iso(fl[0].date)+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()-1);
+  return d.toISOString().slice(0,10);
+}
+
+function render(){
+  const fl = data.flights;
+  if (!data.start) data.start = detectStart(fl);
+  $('start').value = data.start;
+  const pre = fl.filter(f => iso(f.date) <= data.start), post = fl.filter(f => iso(f.date) > data.start);
+  const sum = a => a.reduce((s,f)=>s+f.min,0);
+  const tot = {};
+  for (const f of post) tot[f.code] = (tot[f.code]||0) + f.min;
+  const codes = Object.keys(tot).sort((a,b)=>tot[b]-tot[a]);
+
+  $('codes').innerHTML = codes.map(c => `
+    <div class="row"><span><span class="code">${c}</span> <span class="desc">${DESC[c]||''}</span></span>
+      <span class="num">${fmt(tot[c])}</span></div>`).join('');
+
+  const net = sum(post), preM = sum(pre);
+  $('net').textContent = fmt(net);
+  $('all').textContent = fmt(net);
+  $('netSub').textContent = post.length ? `Abilitazione del ${ita(data.start)} · ${post.length} voli successivi` : 'Nessun volo dopo la scuola';
+  $('pre').textContent = fmt(preM); $('pre2').textContent = fmt(preM);
+  $('preSub').textContent = pre.length ? `${pre.length} voli dal ${pre[0].date} al ${pre[pre.length-1].date}` : 'Nessun volo di scuola iniziale';
+
+  const ck = $('check'); ck.classList.remove('hide','ok','ko');
+  const all = net + preM;
+  if (data.reported == null){ ck.classList.add('hide'); }
+  else if (data.reported === all){ ck.classList.add('ok'); ck.textContent = `✓ Controllo OK: ${fmt(net)} + ${fmt(preM)} di scuola = ${fmt(all)}, come il totale dell'ultima pagina`; }
+  else { ck.classList.add('ko'); ck.textContent = `⚠ Totale calcolato ${fmt(all)} diverso da quello dell'ultima pagina (${fmt(data.reported)})`; }
+
+  const w = $('warn');
+  if (data.skipped.length){ w.classList.remove('hide'); w.textContent = `${data.skipped.length} righe non lette: controlla il PDF.`; }
+  else w.classList.add('hide');
+  $('result').classList.remove('hide');
+}
+
+$('start').onchange = e => { if (e.target.value){ data.start = e.target.value; render(); } };
+$('file').onchange = e => e.target.files[0] && readPdf(e.target.files[0]);
+const d = $('drop');
+['dragenter','dragover'].forEach(ev => d.addEventListener(ev, e => {e.preventDefault(); d.classList.add('over');}));
+['dragleave','drop'].forEach(ev => d.addEventListener(ev, e => {e.preventDefault(); d.classList.remove('over');}));
+d.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; f && readPdf(f); });
+</script>
+</body>
+</html>
