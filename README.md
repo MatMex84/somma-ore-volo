@@ -1,4 +1,4 @@
-# Somma ore di volo
+# FlyTime · Ore di volo
 
 Applicazione web a pagina unica: si carica il **Flight Pilot Log** in PDF e si ottiene la somma delle ore di volo **dopo l'abilitazione**, con il riepilogo per tipo di attività (SOC, IST, SCU, ADD, CON…). La scuola iniziale viene mostrata a parte e non viene sommata.
 
