@@ -2,6 +2,11 @@
 
 Applicazione web a pagina unica: si carica il **Flight Pilot Log** in PDF e si ottiene la somma delle ore di volo **dopo l'abilitazione**, con il riepilogo per tipo di attività (SOC, IST, SCU, ADD, CON…). La scuola iniziale viene mostrata a parte e non viene sommata.
 
+## Cosa mostra
+- Ore dopo l'abilitazione, riepilogo per tipo di attività e scuola iniziale (a parte, non sommata).
+- Grafico a ciambella con il dettaglio per tipo di attività.
+- Grafico a barre impilate delle ore nel tempo: vista per **anni** o per **mesi** (con selettore dell'anno). Toccando una barra si vede il dettaglio.
+
 ## Uso
 Apri `index.html` in un browser (nessuna installazione, funziona anche offline) e scegli o trascina il PDF. Il file resta sul dispositivo: non viene inviato da nessuna parte.
 
