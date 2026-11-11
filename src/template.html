@@ -86,6 +86,43 @@
   .top .bar{order:3;width:48px;height:4px;min-height:0;align-self:center}
   .top h1{color:var(--ink);font-size:clamp(30px,7vw,40px);letter-spacing:.01em;line-height:1.1}
   .top p{color:var(--mut);font-size:15px;margin:4px 0 0}
+  /* caricamento e data affiancati su schermi larghi */
+  .setup{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:14px}
+  .setup .card{margin-bottom:0;min-width:0}
+  @media(min-width:700px){
+    .loaded .setup{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .loaded .setup #dateCard{display:flex;flex-direction:column;justify-content:center}
+  }
+  /* telefono: dopo il caricamento i due riquadri si comprimono */
+  @media(max-width:699px){
+    .loaded .top{padding-top:max(12px,env(safe-area-inset-top))}
+    .loaded .top h1{font-size:24px}
+    .loaded .top p{margin-top:2px;font-size:13px}
+    .loaded .top .bar{display:none}
+    .loaded main{padding-top:10px}
+    .loaded .setup{gap:8px;margin-bottom:10px}
+    .loaded .setup .card{padding:10px 12px}
+    .loaded .drop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-width:1px;text-align:left;border-radius:10px}
+    .loaded .drop b{margin:0;font-size:15px}
+    .loaded #dropSub{display:none}
+    .loaded .drop::after{content:"Cambia";font-size:13px;font-weight:600;color:var(--acc)}
+    .loaded #status{margin:6px 2px 0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .loaded #dateHint{display:none}
+    .loaded .datebox{display:flex;align-items:center;gap:10px;padding:0;border:0}
+    .loaded .datebox label{margin:0;white-space:nowrap}
+    .loaded #start{flex:1 1 auto;min-height:40px;height:40px}
+    .loaded .cols{gap:10px}
+  }
+  /* quando i riquadri vanno in colonna: ore e grafici per primi, elenchi dopo */
+  @media(max-width:859px){
+    .cols{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+    .cols > .col{display:contents}
+    .cols > .col:first-child > .card:nth-child(1){order:1}
+    .cols > .col:last-child > .card:nth-child(1){order:2}
+    .cols > .col:last-child > .card:nth-child(2){order:3}
+    .cols > .col:first-child > .card:nth-child(2){order:4}
+    .cols > .col:first-child > .card:nth-child(3){order:5}
+  }
 </style>
 </head>
 <body>
@@ -95,6 +132,7 @@
 </div></div></header>
 <main>
 
+  <div class="setup">
   <div class="card">
     <label class="drop" id="drop">
       <b id="dropTitle">Scegli il PDF</b>
@@ -107,6 +145,7 @@
   <div class="card hide" id="dateCard">
     <div class="datebox" style="border-top:0;padding-top:0"><label for="start" class="code">Data di abilitazione</label><input type="date" id="start"></div>
     <div class="hint" id="dateHint">Inserisci la data di abilitazione per vedere il conteggio. Si contano i voli dal giorno successivo; il giorno indicato resta escluso.</div>
+  </div>
   </div>
 
   <div id="result" class="hide">
@@ -221,10 +260,12 @@ async function readPdf(file){
     if (!data.flights.length) throw new Error('Nessuna riga di volo riconosciuta: è il file giusto?');
     $('status').textContent = `${file.name} · ${pdf.numPages} pagine · ${data.flights.length} voli`;
     $('dropTitle').textContent = 'Carica un altro PDF';
+    document.body.classList.add('loaded');
     $('start').value = ''; data.start = null;
     $('dateCard').classList.remove('hide'); $('result').classList.add('hide');
   }catch(e){
     $('status').textContent = 'Errore: ' + e.message;
+    document.body.classList.remove('loaded');
     $('result').classList.add('hide'); $('dateCard').classList.add('hide');
   }
 }
